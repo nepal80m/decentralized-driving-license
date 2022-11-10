@@ -7,5 +7,10 @@ To run the project, clone the project in your local system and run following com
 
 ```bash
 npm install
+npx hardhat node
 ```
-
+Open new terminal and run following commands:
+```bash
+npx hardhat run scripts/deploy.js --network localhost
+npx run dev
+```

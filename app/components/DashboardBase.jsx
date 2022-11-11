@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useContext, useEffect, useState } from "react";
-import DashboardContext from "./store/dashboard-context";
+import DashboardContext from "../store/dashboard-context";
 export default function DashboardBase({ children }) {
     const dashboardCtx = useContext(DashboardContext);
 
@@ -13,8 +13,16 @@ export default function DashboardBase({ children }) {
                 <div>
                     Connected Address: {dashboardCtx.address || 'Not Connected'}
                 </div>
+                <div>
+
+                    Welcome to the decentralized license system.
+                </div>
+
                 <ul>
-                    {dashboardCtx.isAdmin ?
+                    <li>
+                        <Link href='/'>Dashboard</Link>
+                    </li>
+                    {dashboardCtx.isAdmin &&
 
                         <>
                             <li>
@@ -24,17 +32,13 @@ export default function DashboardBase({ children }) {
                                 <Link href='/admin'>Admins</Link>
                             </li>
                         </>
-                        :
-                        <li>
-                            <Link href='/license'>License</Link>
-                        </li>
+
                     }
 
                 </ul>
                 {children}
             </div>
 
-            Welcome to the decentralized license system.
 
 
         </>

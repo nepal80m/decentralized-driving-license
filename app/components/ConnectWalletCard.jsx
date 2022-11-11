@@ -1,6 +1,6 @@
 'use client';
 
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import EthersContext from "../store/ethers-context";
 
 const REQUIRED_NETWORK_ID = 1337;
@@ -22,18 +22,7 @@ export default function ConnectWalletCard({ login, logout
     const [isLoading, setIsLoading] = useState(true);
 
 
-    useEffect(() => {
-        attemptReConnect();
-        window.ethereum.on('accountsChanged', (_) => {
-            attemptReConnect();
-        })
-        window.ethereum.on('chainChanged', (_) => {
-            attemptReConnect();
-        })
-    }, [])
-
-
-    function attemptReConnect() {
+    const attemptReConnect = useCallback(() => {
         setIsLoading(true);
         const account = window.ethereum.selectedAddress;
         ethersCtx.setSelectedAddress(account);
@@ -56,7 +45,20 @@ export default function ConnectWalletCard({ login, logout
         setNetworkError();
         login();
         setIsLoading(false);
-    }
+    }, [ethersCtx, login, logout])
+
+
+    useEffect(() => {
+        attemptReConnect();
+        window.ethereum.on('accountsChanged', (_) => {
+            attemptReConnect();
+        })
+        window.ethereum.on('chainChanged', (_) => {
+            attemptReConnect();
+        })
+    }, [attemptReConnect])
+
+
 
     // async function asyncAttemptReConnect() {
     //     const accounts = await window.ethereum.request({ method: 'eth_accounts' });

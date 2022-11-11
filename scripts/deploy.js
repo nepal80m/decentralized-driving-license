@@ -18,10 +18,6 @@ async function main() {
   const contractsDir = path.join(__dirname, "..", "contracts");
 
   fs.writeFileSync(
-    path.join(contractsDir, "contract-address.js"),
-    `export const contractAddress = "${drivingLicense.address}"`);
-
-  fs.writeFileSync(
     path.join(contractsDir, "contract-address.json"),
     JSON.stringify({
       DrivingLicense: drivingLicense.address,

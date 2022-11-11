@@ -2,30 +2,19 @@
 
 import Link from "next/link";
 import { useContext, useEffect, useState } from "react";
+import AdminDashboard from "./components/AdminDashboard";
+import UserDashboard from "./components/UserDashboard";
 import DashboardContext from "./store/dashboard-context";
+import EthersContext from "./store/ethers-context";
 export default function HomePage() {
   const dashboardCtx = useContext(DashboardContext);
 
-  // useEffect(() => {
-  //   fetchUserDetail()
-  // })
+  if (dashboardCtx.isAdmin) {
+    return <AdminDashboard />
 
+  }
 
-  return (
-    <>
-
-      <div>
-        Welcome to the decentralized license system.
-
-      </div>
-
-      <div>
-        Navigate through the link to
-      </div>
-    </>
-
-
-  )
+  return <UserDashboard />
 }
 
 

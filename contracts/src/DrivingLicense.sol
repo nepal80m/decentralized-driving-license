@@ -1,39 +1,202 @@
 // SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.8.7;
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract DrivingLicense {
-    struct User {
-        string name;
-        address addr;
-        bool active;
+    address public owner;
+    mapping(address => bool) public admins;
+
+    using Counters for Counters.Counter;
+    Counters.Counter private _licenseNumbers;
+
+    struct License {
         uint256 licenseNumber;
+        string holderName;
+        address holderAddress;
+        string contentHash;
+        bool valid;
     }
 
-    mapping(address => User) public licenseInfo;
-    uint256 licenseCount;
-    address public owner;
+    mapping(uint256 => License) public licenseNumberToLicense;
 
     constructor() {
         owner = msg.sender;
-        licenseCount = 0;
     }
+
+    // Events
+    event LicenseRegistered(
+        uint256 timestamp,
+        uint256 licenseNumber,
+        string holderName,
+        address holderAddress,
+        string contentHash,
+        bool valid
+    );
+    event LicenseUpdated(
+        uint256 timestamp,
+        address updater,
+        uint256 licenseNumber,
+        string holderName,
+        address holderAddress,
+        string contentHash,
+        bool valid
+    );
+
+    // Modifiers
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
         _;
     }
-
-    function isLicenseValid(address _addr) external view returns (bool) {
-        return licenseInfo[_addr].active;
+    modifier onlyAdmins() {
+        require(
+            admins[msg.sender] || msg.sender == owner,
+            "Only authorized admins can call this function"
+        );
+        _;
     }
 
-    function applyForLicense(string calldata _name) external {
-        licenseCount++;
-        licenseInfo[msg.sender] = User(_name, msg.sender, false, licenseCount);
+    modifier onlyHolderOrAdmins(uint256 _licenseNumber) {
+        require(
+            msg.sender ==
+                licenseNumberToLicense[_licenseNumber].holderAddress ||
+                admins[msg.sender] ||
+                msg.sender == owner,
+            "Only the license holder or authorized admins can call this function"
+        );
+        _;
     }
 
-    function updateLicenseStatus(address _addr) external onlyOwner {
-        licenseInfo[_addr].active = !licenseInfo[_addr].active;
+    modifier licenseExists(uint256 _licenseNumber) {
+        require(
+            _licenseNumber <= _licenseNumbers.current(),
+            "License Doesnot exists"
+        );
+        _;
     }
+
+    // Functions
+
+    // Admin Stuffs
+    function registerAdmin(address _adminAddress) external onlyAdmins {
+        admins[_adminAddress] = true;
+    }
+
+    function removeAdmin(address _adminAddress) external onlyAdmins {
+        admins[_adminAddress] = false;
+    }
+
+    // License Stuffs
+    function applyForLicense(
+        string calldata _holderName,
+        string calldata _contentHash
+    ) external {
+        _licenseNumbers.increment();
+        uint256 newLicenseNumber = _licenseNumbers.current();
+
+        licenseNumberToLicense[newLicenseNumber] = License(
+            newLicenseNumber,
+            _holderName,
+            msg.sender,
+            _contentHash,
+            false
+        );
+        emit LicenseRegistered(
+            block.timestamp,
+            newLicenseNumber,
+            _holderName,
+            msg.sender,
+            _contentHash,
+            false
+        );
+    }
+
+    function updateLicenseHolderName(
+        uint256 _licenseNumber,
+        string calldata _holderName
+    ) external onlyAdmins licenseExists(_licenseNumber) {
+        License memory _license = licenseNumberToLicense[_licenseNumber];
+        _license.holderName = _holderName;
+        emit LicenseUpdated(
+            block.timestamp,
+            msg.sender,
+            _licenseNumber,
+            _license.holderName,
+            _license.holderAddress,
+            _license.contentHash,
+            _license.valid
+        );
+    }
+
+    function updateLicenseHolderAddress(
+        uint256 _licenseNumber,
+        address _holderAddress
+    ) external onlyAdmins licenseExists(_licenseNumber) {
+        License memory _license = licenseNumberToLicense[_licenseNumber];
+        _license.holderAddress = _holderAddress;
+        emit LicenseUpdated(
+            block.timestamp,
+            msg.sender,
+            _licenseNumber,
+            _license.holderName,
+            _license.holderAddress,
+            _license.contentHash,
+            _license.valid
+        );
+    }
+
+    function updateLicenseContentHash(
+        uint256 _licenseNumber,
+        string calldata _contentHash
+    ) external onlyAdmins licenseExists(_licenseNumber) {
+        License memory _license = licenseNumberToLicense[_licenseNumber];
+        _license.contentHash = _contentHash;
+        emit LicenseUpdated(
+            block.timestamp,
+            msg.sender,
+            _licenseNumber,
+            _license.holderName,
+            _license.holderAddress,
+            _license.contentHash,
+            _license.valid
+        );
+    }
+
+    function updateLicenseValidity(uint256 _licenseNumber, bool _valid)
+        external
+        onlyAdmins
+    {
+        License memory _license = licenseNumberToLicense[_licenseNumber];
+        _license.valid = _valid;
+        emit LicenseUpdated(
+            block.timestamp,
+            msg.sender,
+            _licenseNumber,
+            _license.holderName,
+            _license.holderAddress,
+            _license.contentHash,
+            _license.valid
+        );
+    }
+
+    // function getUnverifiedLicenses()external view returns(uint256[] memory){
+    //     uint256 unverifiedLicenseCount=0;
+    //     for(uint256 i=1; i<=_licenseNumbers.current();i++){
+    //         if(!licenseNumberToLicense[i].valid){
+    //             unverifiedLicenseCount++;
+    //         }
+    //     }
+
+    //     uint256[] memory unverifiedLicenses=new uint256[](unverifiedLicenseCount);
+    //     uint256 counter=0;
+    //     for(uint256 i=1; i<=_licenseNumbers.current();i++){
+    //         if(!licenseNumberToLicense[i].valid){
+    //             unverifiedLicenses[counter]=i;
+    //             counter++;
+
+    //         }
+    //     }
+    //     return unverifiedLicenses;
+    // }
 }

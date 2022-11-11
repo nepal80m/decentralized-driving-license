@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
+import EthersContext from "../store/ethers-context";
 
-const NETWORKS = {
+const REQUIRED_NETWORK_ID = 1337;
+export const NETWORKS = {
     1: 'Ethereum Mainnet',
     5: 'Goerli Testnet',
     11155111: 'Sepolia Testnet',
@@ -12,29 +14,98 @@ const NETWORKS = {
     1337: 'Localhost 8545',
 };
 
-export default function ConnectWalletCard({ connectWallet, networkError, dismissNetworkError, isConnecting }) {
-    const [selectedNetwork, setSelectedNetwork] = useState();
-    const [selectedAddress, setSelectedAddress] = useState(window.ethereum.selectedAddress);
+export default function ConnectWalletCard({ login, logout
+}) {
+    const ethersCtx = useContext(EthersContext);
+    const [networkError, setNetworkError] = useState('');
+    const [isConnecting, setIsConnecting] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+
     useEffect(() => {
-        initNetwork();
+        attemptReConnect();
+        window.ethereum.on('accountsChanged', (_) => {
+            attemptReConnect();
+        })
+        window.ethereum.on('chainChanged', (_) => {
+            attemptReConnect();
+        })
     }, [])
 
-    async function initNetwork() {
-        const chainId = parseInt(await window.ethereum.request({ method: 'eth_chainId' }))
-        setSelectedNetwork(NETWORKS[chainId] || 'Unknown Network');
 
-        window.ethereum.on("chainChanged", (chainId) => {
-            setSelectedNetwork(NETWORKS[chainId] || 'Unknown Network');
-            if (selectedAddress) {
-                connectWallet();
+    function attemptReConnect() {
+        setIsLoading(true);
+        const account = window.ethereum.selectedAddress;
+        ethersCtx.setSelectedAddress(account);
+        if (!account) {
+            logout()
+            setIsLoading(false);
+            return;
+        }
+
+        const chainId = parseInt(window.ethereum.chainId);
+        ethersCtx.setSelectedNetwork(chainId);
+
+        if (chainId !== REQUIRED_NETWORK_ID) {
+            logout();
+            setIsLoading(false);
+
+            setNetworkError(`Please connect Metamask to ${NETWORKS[REQUIRED_NETWORK_ID]}`);
+            return;
+        }
+        setNetworkError();
+        login();
+        setIsLoading(false);
+    }
+
+    // async function asyncAttemptReConnect() {
+    //     const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    //     ethersCtx.setSelectedAddress(accounts[0]);
+    //     if (accounts.length === 0) {
+    //         logout()
+    //         return;
+    //     }
+
+
+    //     const chainId = parseInt(await window.ethereum.request({ method: 'eth_chainId' }))
+    //     ethersCtx.setSelectedNetwork(chainId);
+
+    //     if (chainId !== REQUIRED_NETWORK_ID) {
+    //         logout();
+    //         setNetworkError(`Please connect Metamask to ${NETWORKS[REQUIRED_NETWORK_ID]}`);
+    //         return;
+    //     }
+
+    //     setNetworkError();
+
+    //     console.log('Can finally do fetching...');
+
+    //     login();
+
+    // }
+
+    async function sendWalletConnectRequest() {
+        setIsConnecting(true);
+        try {
+            await window.ethereum.request({ method: 'eth_requestAccounts' });
+        } catch (error) {
+            if (error.code === 4001) {
+                setNetworkError('Connection request was rejected.')
+                console.log("Connection request was rejected.")
+            } else {
+                console.error(error);
             }
-        });
+            setIsConnecting(false)
+            return;
+        }
+        setIsConnecting(false)
 
-        window.ethereum.on('accountsChanged', (accounts) => {
-            setSelectedAddress(accounts[0]);
-        });
+    }
 
-
+    if (isLoading) {
+        return <>
+            Loggin In....
+        </>
     }
 
     return (
@@ -45,7 +116,7 @@ export default function ConnectWalletCard({ connectWallet, networkError, dismiss
 
             {networkError && (
                 <div style={{ color: 'red' }}>{networkError}
-                    <button onClick={dismissNetworkError}>X</button>
+                    <button onClick={() => setNetworkError()}>X</button>
                 </div>
             )
             }
@@ -53,20 +124,20 @@ export default function ConnectWalletCard({ connectWallet, networkError, dismiss
 
             </div>
             <div>
-                {selectedAddress ?
+                {ethersCtx.selectedAddress ?
                     <div>
                         <div>
 
-                            {selectedAddress}
+                            {ethersCtx.selectedAddress}
                         </div>
                         <div>
 
-                            {selectedNetwork}
+                            {NETWORKS[ethersCtx.selectedNetwork] || 'Unknown Network'}
                         </div>
                     </div> :
                     <button
                         type="submit"
-                        onClick={connectWallet}
+                        onClick={sendWalletConnectRequest}
                         disabled={isConnecting}
                     >
                         {isConnecting ? "Connecting..." :

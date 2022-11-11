@@ -7,7 +7,7 @@ export default function DashboardProvider(props) {
     const ethersCtx = useContext(EthersContext)
     const [address, setAddress] = useState();
     const [isAdmin, setIsAdmin] = useState();
-    const [user, setUser] = useState();
+    const [license, setLicense] = useState();
     const [requests, setRequests] = useState([]);
 
 
@@ -16,8 +16,12 @@ export default function DashboardProvider(props) {
     const dashboardContext = {
         address,
         isAdmin,
-        user,
+        license,
         requests,
+        setAddress,
+        setIsAdmin,
+        setLicense,
+        setRequests,
     };
 
 

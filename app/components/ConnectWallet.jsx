@@ -10,80 +10,35 @@ import DrivingLicenseArtifact from '../../contracts/DrivingLicense.json'
 import ConnectWalletCard from '../components/ConnectWalletCard'
 import NoWalletDetected from "../components/NoWalletDetected";
 
-const REQUIRED_NETWORK_ID = 1337;
+
 
 export default function ConnectWallet({ children }) {
     const [walletConnected, setWalletConnected] = useState(false);
-    const [isConnecting, setIsConnecting] = useState(false);
-    const [networkError, setNetworkError] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+
     const ethersCtx = useContext(EthersContext);
     const dashboardCtx = useContext(DashboardContext);
 
-    useEffect(() => {
-        if (window.ethereum === undefined) {
-            return;
-        }
-        checkWalletConnection();
-    }, [])
 
 
 
-    async function checkWalletConnection() {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
-        if (accounts.length == 0) {
-            setWalletConnected(false);
-        }
-        else {
 
-            connectWallet();
-        }
 
+    // TODO:Check if  window.reload() is required on chain change
+
+
+    async function initialize() {
+        setIsLoading(true);
+        const _ethersCtx = await initializeEthers();
+        await fetchDashboardContents(_ethersCtx);
+        // setWalletConnected(true);
+        setIsLoading(false);
     }
 
-
-    async function connectWallet() {
-        setIsConnecting(true)
-
-        try {
-            await window.ethereum.request({ method: 'eth_requestAccounts' });
-        } catch (error) {
-            if (error.code === 4001) {
-                setNetworkError('Connection request was rejected.')
-                console.log("Connection request was rejected.")
-            } else {
-                console.error(error);
-            }
-            setIsConnecting(false)
-            return;
-        }
-        // console.log("Connected to metamask with account ", window.ethereum.selectedAddress);
-
-
-        const chainId = parseInt(await window.ethereum.request({ method: 'eth_chainId' }))
-        if (chainId !== REQUIRED_NETWORK_ID) {
-            setNetworkError(`Please connect Metamask to ${NETWORKS[REQUIRED_NETWORK_ID]}`);
-            setIsConnecting(false)
-            return;
-        }
-
-
-        window.ethereum.on("chainChanged", (_chainId) => {
-            window.location.reload();
-        });
-
-
-        await initializeEthers();
-        await fetchDashboardContents();
-
-
-        setWalletConnected(true);
-        setIsConnecting(false);
-
-
-    }
 
 
     async function initializeEthers() {
+
         const _provider = new ethers.providers.Web3Provider(window.ethereum);
         ethersCtx.setProvider(_provider)
         const _drivingLicense = new ethers.Contract(
@@ -97,38 +52,67 @@ export default function ConnectWallet({ children }) {
     }
 
 
-    async function fetchDashboardContents() {
+    async function fetchDashboardContents(_ethersCtx) {
+        const selectedAddress = window.ethereum.selectedAddress;
+        dashboardCtx.setAddress(selectedAddress);
+
+
+
+
 
         try {
-            // ethersCtx.drivingLicense.isLicenseValid()
+            const isAdmin = await _ethersCtx.drivingLicense.admins(selectedAddress);
+            const owner = await _ethersCtx.drivingLicense.owner();
+            const isOwner = owner.toLowerCase() === selectedAddress.toLowerCase();
+
+            dashboardCtx.setIsAdmin(isAdmin || isOwner)
+
+            if (!isAdmin) {
+                // fetch license data
+            }
+            else {
+                // fetch requests
+            }
+            //     address: '',
+            //     isAdmin: false,
+            //     license: {
+            //     licenseNumber: '',
+            //     holderName: '',
+            //     holderAddress: '',
+            //     contentHash: '',
+            //     valid: false,
+            // },
+            // requests: [{}, {}],
+            // ethersCtx.drivingLicense.admins()
         }
         catch (error) {
             console.error(error)
             console.error('Failed to interact with the contract.')
             return;
         }
-
-        window.ethereum.on("accountsChanged", (accounts) => {
-            if (accounts.length === 0) {
-                setSelectedAddress()
-            }
-            else {
-                setSelectedAddress(accounts[0])
-            }
-        });
-
     }
 
 
     if (window.ethereum === undefined) return <NoWalletDetected />;
 
-    if (!walletConnected) return <ConnectWalletCard
-        connectWallet={connectWallet}
-        networkError={networkError}
-        dismissNetworkError={() => setNetworkError()}
-        isConnecting={isConnecting}
 
+
+
+
+    if (!walletConnected) return <ConnectWalletCard
+        // login={initialize}
+        login={() => {
+            setWalletConnected(true);
+            initialize();
+        }}
+        logout={() => setWalletConnected(false)}
     />;
+
+    if (isLoading) {
+        return <>
+            Fetching Data....
+        </>
+    }
 
     return children;
 }

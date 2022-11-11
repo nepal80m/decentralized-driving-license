@@ -4,13 +4,19 @@ import EthersContext from "./ethers-context";
 
 
 const EthersProvider = (props) => {
+    const [selectedAddress, setSelectedAddress] = useState();
+    const [selectedNetwork, setSelectedNetwork] = useState();
     const [provider, setProvider] = useState();
     const [drivingLicense, setDrivingLicense] = useState();
 
 
     const ethersContext = {
+        selectedAddress,
+        selectedNetwork,
         provider,
         drivingLicense,
+        setSelectedAddress,
+        setSelectedNetwork,
         setProvider,
         setDrivingLicense,
     };

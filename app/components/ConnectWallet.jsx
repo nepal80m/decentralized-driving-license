@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useContext } from "react";
-
+import { ethers } from "ethers";
 import EthersContext from "../store/ethers-context";
 import DashboardContext from "../store/dashboard-context";
 

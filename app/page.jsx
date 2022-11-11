@@ -15,32 +15,13 @@ export default function HomePage() {
     <>
 
       <div>
-        <div>
-          Connected Address: {dashboardCtx.address || 'Not Connected'}
-        </div>
-        <ul>
-          {dashboardCtx.isAdmin ?
+        Welcome to the decentralized license system.
 
-            <>
-              <li>
-                <Link href='/requests'>Requests</Link>
-              </li>
-              <li>
-                <Link href='/admin'>Admins</Link>
-              </li>
-            </>
-            :
-            <li>
-              <Link href='/license'>License</Link>
-            </li>
-          }
-
-        </ul>
       </div>
 
-      Welcome to the decentralized license system.
-
-
+      <div>
+        Navigate through the link to
+      </div>
     </>
 
 

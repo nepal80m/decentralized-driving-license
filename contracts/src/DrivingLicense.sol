@@ -19,6 +19,7 @@ contract DrivingLicense {
     }
 
     mapping(uint256 => License) public licenseNumberToLicense;
+    mapping(address => uint256) public holderAddressToLicenseNumber;
 
     constructor() {
         owner = msg.sender;
@@ -76,6 +77,14 @@ contract DrivingLicense {
         _;
     }
 
+    modifier newUser() {
+        require(
+            holderAddressToLicenseNumber[msg.sender] <= 0,
+            "License already associated with this address."
+        );
+        _;
+    }
+
     // Functions
 
     // Admin Stuffs
@@ -91,7 +100,7 @@ contract DrivingLicense {
     function applyForLicense(
         string calldata _holderName,
         string calldata _contentHash
-    ) external {
+    ) external newUser {
         _licenseNumbers.increment();
         uint256 newLicenseNumber = _licenseNumbers.current();
 
@@ -102,6 +111,7 @@ contract DrivingLicense {
             _contentHash,
             false
         );
+        holderAddressToLicenseNumber[msg.sender] = newLicenseNumber;
         emit LicenseRegistered(
             block.timestamp,
             newLicenseNumber,
@@ -122,7 +132,7 @@ contract DrivingLicense {
             block.timestamp,
             msg.sender,
             _licenseNumber,
-            _license.holderName,
+            _holderName,
             _license.holderAddress,
             _license.contentHash,
             _license.valid
@@ -134,13 +144,14 @@ contract DrivingLicense {
         address _holderAddress
     ) external onlyAdmins licenseExists(_licenseNumber) {
         License memory _license = licenseNumberToLicense[_licenseNumber];
+        holderAddressToLicenseNumber[_license.holderAddress] = 0;
         _license.holderAddress = _holderAddress;
         emit LicenseUpdated(
             block.timestamp,
             msg.sender,
             _licenseNumber,
             _license.holderName,
-            _license.holderAddress,
+            _holderAddress,
             _license.contentHash,
             _license.valid
         );
@@ -158,7 +169,7 @@ contract DrivingLicense {
             _licenseNumber,
             _license.holderName,
             _license.holderAddress,
-            _license.contentHash,
+            _contentHash,
             _license.valid
         );
     }
@@ -176,7 +187,7 @@ contract DrivingLicense {
             _license.holderName,
             _license.holderAddress,
             _license.contentHash,
-            _license.valid
+            _valid
         );
     }
 

@@ -1,9 +1,7 @@
-'use client';
-
 import ConnectWallet from "./components/ConnectWallet";
 import ContextProviderWrapper from "./components/ContextProviderWrapper";
-// import DashboardProvider from "./store/DashboardProvider";
-// import EthersProvider from "./store/EthersProvider";
+import DashboardBase from "./components/DashboardBase";
+
 export default function RootLayout({ children }) {
 
   return (
@@ -11,7 +9,10 @@ export default function RootLayout({ children }) {
       <body>
         <ContextProviderWrapper>
           <ConnectWallet>
-            {children}
+            <DashboardBase>
+
+              {children}
+            </DashboardBase>
           </ConnectWallet>
         </ContextProviderWrapper>
       </body>
